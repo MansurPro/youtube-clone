@@ -21,6 +21,6 @@ const Navbar = () => (
     </Link>
     <SearchBar />
   </Stack>
-)
+);
 
-export default Navbar
+export default Navbar;
