@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Typography, Box, CardContent, CardMedia } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 
 import { demoProfilePicture } from '../utils/constants';
 
