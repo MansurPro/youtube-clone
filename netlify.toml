@@ -1,0 +1,15 @@
+[build]
+  command = "npm run build"
+  publish = "build"
+
+[build.environment]
+  # Vite 8 (rolldown) imports styleText from node:util, which needs Node 20.12+.
+  # Netlify's default is still 18, which fails at import with a SyntaxError.
+  NODE_VERSION = "22"
+
+# react-router resolves /video/:id etc. client-side, so every path must serve
+# index.html or a hard refresh / shared deep link 404s.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
