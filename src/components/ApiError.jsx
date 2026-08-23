@@ -1,6 +1,11 @@
 import { Box, Typography } from '@mui/material';
 
 const messageFor = (error) => {
+  // Our own proxy replies { error } and knows exactly what went wrong (e.g. a
+  // missing key on the deploy), so prefer that over guessing from the status.
+  const fromProxy = error?.response?.data?.error;
+  if (typeof fromProxy === 'string') return fromProxy;
+
   switch (error?.response?.status) {
     case 401:
     case 403:
