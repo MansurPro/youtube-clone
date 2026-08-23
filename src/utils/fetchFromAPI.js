@@ -1,15 +1,13 @@
 import axios from "axios";
 
-const BASE_URL = 'https://youtube-v31.p.rapidapi.com';
+// Points at our own proxy, not RapidAPI directly — the key lives server-side
+// (netlify/functions/youtube.js in production, the Vite dev proxy locally).
+const BASE_URL = '/api/youtube';
 
 const options = {
     params: {
       maxResults: '50',
     },
-    headers: {
-      'X-RapidAPI-Key': import.meta.env.VITE_RAPID_API_KEY,
-      'X-RapidAPI-Host': 'youtube-v31.p.rapidapi.com'
-    }
 };
 
 export const fetchFromAPI = async (url) => {

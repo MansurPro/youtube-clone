@@ -7,8 +7,15 @@
   # Netlify's default is still 18, which fails at import with a SyntaxError.
   NODE_VERSION = "22"
 
-# react-router resolves /video/:id etc. client-side, so every path must serve
-# index.html or a hard refresh / shared deep link 404s.
+# Must come before the SPA catch-all below: first matching rule wins, so a
+# greedy /* would otherwise swallow the API calls and return index.html.
+[[redirects]]
+  from = "/api/youtube/*"
+  to = "/.netlify/functions/youtube/:splat"
+  status = 200
+
+# react-router resolves /video/:id etc. client-side, so every other path must
+# serve index.html or a hard refresh / shared deep link 404s.
 [[redirects]]
   from = "/*"
   to = "/index.html"

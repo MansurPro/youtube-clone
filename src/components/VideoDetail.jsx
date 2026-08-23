@@ -1,27 +1,22 @@
-import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ReactPlayer from 'react-player';
 import { Typography, Box, Stack } from '@mui/material';
 import { CheckCircle } from '@mui/icons-material';
 
-import { Videos, Loader } from './';
-import { fetchFromAPI } from '../utils/fetchFromAPI';
+import { Videos, Loader, ApiError } from './';
+import { useApi } from '../utils/useApi';
 
 const VideoDetail = () => {
-  const [videoDetail, setVideoDetail] = useState(null);
-  const [videos, setVideos] = useState(null);
   const { id } = useParams();
 
-  useEffect(() => {
-    fetchFromAPI(`videos?part=snippet,statistics&id=${id}`)
-    .then(data => setVideoDetail(data.items[0]));
+  const { data: videoDetail, error: detailError } = useApi(`videos?part=snippet,statistics&id=${id}`, (d) => d?.items?.[0]);
+  const { data: videos, error: videosError } = useApi(`search?part=snippet&relatedToVideoId=${id}&type=video`);
 
-    fetchFromAPI(`search?part=snippet&relatedToVideoId=${id}&type=video`)
-    .then(data => setVideos(data.items));
-  }, [id]);
-
+  if(detailError) return <ApiError error={detailError} />;
   if(!videoDetail?.snippet) return <Loader />;
-  const { snippet: { title, channelId, channelTitle }, statistics: { viewCount, likeCount } } = videoDetail;
+  // statistics is absent on some videos, so don't destructure straight into it
+  const { snippet: { title, channelId, channelTitle }, statistics = {} } = videoDetail;
+  const { viewCount, likeCount } = statistics;
 
   return (
     <Box minHeight="95vh">
@@ -49,19 +44,23 @@ const VideoDetail = () => {
                 </Typography>
               </Link>
               <Stack direction='row' gap="20px">
-                <Typography variant='body1' sx={{ opacity: 0.7 }}>
-                  {parseInt(viewCount).toLocaleString()} views
-                </Typography>
-                <Typography variant='body1' sx={{ opacity: 0.7 }}>
-                  {parseInt(likeCount).toLocaleString()} likes
-                </Typography>
+                {viewCount && (
+                  <Typography variant='body1' sx={{ opacity: 0.7 }}>
+                    {parseInt(viewCount).toLocaleString()} views
+                  </Typography>
+                )}
+                {likeCount && (
+                  <Typography variant='body1' sx={{ opacity: 0.7 }}>
+                    {parseInt(likeCount).toLocaleString()} likes
+                  </Typography>
+                )}
               </Stack>
             </Stack>
           </Box>
         </Box>
 
         <Box px={2} py={{ md: 1, xs: 5 }} justifyContent="center" alignItems="center">
-        <Videos videos={videos} direction="column" />
+        <Videos videos={videos} error={videosError} direction="column" />
         </Box>
 
       </Stack>

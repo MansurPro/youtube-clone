@@ -1,7 +1,8 @@
 import { Stack, Box } from "@mui/material";
-import { VideoCard, ChannelCard, Loader } from "./";
+import { VideoCard, ChannelCard, Loader, ApiError } from "./";
 
-const Videos = ({ videos, direction }) => {
+const Videos = ({ videos, direction, error }) => {
+  if(error) return <ApiError error={error} />;
   if(!videos?.length) return <Loader />;
   return (
     <Stack 

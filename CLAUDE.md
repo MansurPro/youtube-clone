@@ -12,7 +12,9 @@ There is no test runner and no linter — the project was migrated off Create Re
 
 ## Setup
 
-Requires `VITE_RAPID_API_KEY` in `.env` — a RapidAPI key for the [youtube-v31](https://rapidapi.com/ytdlfree/api/youtube-v31) API, read via `import.meta.env` (not `process.env`). `.env` is gitignored. Without the key every request 401s and every page sits on the `Loader` spinner forever — there is no error state.
+Requires `RAPID_API_KEY` in `.env` — a RapidAPI key for the [youtube-v31](https://rapidapi.com/ytdlfree/api/youtube-v31) API. `.env` is gitignored.
+
+The name deliberately has **no `VITE_` prefix**. Vite inlines `VITE_*` vars into the client bundle at build time, which published the key on every deploy. The key is now only ever read server-side, so never rename it back.
 
 ## Build-tool constraints
 
@@ -27,7 +29,16 @@ The app was migrated from CRA to Vite. Two rules follow from that and will silen
 
 Single-page app, no state manager, no TypeScript. Four routes in `src/App.jsx`: `/`, `/video/:id`, `/channel/:id`, `/search/:searchTerm`.
 
-All data flows through one function, `src/utils/fetchFromAPI.js` — `fetchFromAPI('search?part=snippet&q=...')` appends the path to the RapidAPI base URL and injects the key headers plus `maxResults=50`. Page components (`Feed`, `SearchFeed`, `VideoDetail`, `ChannelDetail`) each own their own `useState` + `useEffect` fetch keyed on a param or the selected category. There is no caching, deduplication, or abort on unmount — the free RapidAPI tier is rate-limited, so adding fetch call sites has a real quota cost.
+### The API path
+
+Nothing talks to RapidAPI from the browser. Requests go to `/api/youtube/<endpoint>`, and the key is attached server-side in two mirrored places — keep them in sync:
+
+- **Production**: `netlify/functions/youtube.js` reads `process.env.RAPID_API_KEY` per request. It allowlists `search`, `videos`, `channels`, because the proxy is publicly reachable and would otherwise spend the quota on any endpoint. Routed by the `/api/youtube/*` redirect in `netlify.toml`, which must stay **above** the SPA catch-all — first match wins.
+- **Local dev**: the `server.proxy` block in `vite.config.js` does the same thing, so `npm start` works without the Netlify CLI.
+
+`src/utils/fetchFromAPI.js` is the only caller; it just prefixes `/api/youtube` and adds `maxResults=50`. Pages fetch via the `useApi` hook (`src/utils/useApi.js`), which owns the loading/error state and guards against a late response landing after the route changed. It returns `{ data, error }`; pass `error` down to `Videos`, which renders `ApiError` instead of an endless `Loader`. Note the hook deliberately excludes its `pick` argument from the effect deps — callers pass inline functions, which would refetch forever.
+
+There is no caching or deduplication client-side (the function sets a 5-minute `cache-control` so the edge absorbs repeats). The free RapidAPI tier is rate-limited, so adding fetch call sites has a real quota cost.
 
 Rendering is a two-layer split:
 - `Videos` takes a raw API `items` array and dispatches per item — `item.id.videoId` → `VideoCard`, `item.id.channelId` → `ChannelCard`. Empty/undefined array → `Loader`. This means the API's mixed search-result shape is handled in one place; keep new item kinds there.
